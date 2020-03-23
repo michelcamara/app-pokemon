@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, ScrollView, Dimensions, Image } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { Header } from 'react-native-elements';
 import RNPickerSelect from 'react-native-picker-select';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import { Divider, Image } from 'react-native-elements';
 
 import axios from 'axios';
 
@@ -17,8 +18,6 @@ export default function App() {
   useEffect(() => {
     async function loadPokemons() {
       const response = await axios.get('https://raw.githubusercontent.com/Biuni/PokemonGO-Pokedex/master/pokedex.json');
-      setPoke(response.data.pokemon);
-
       //Filtrando os tipos de pokemons
       const types = [];
       const newTypes = [];
@@ -30,21 +29,41 @@ export default function App() {
           }
         })
       ));
-
       types.map(t => {
         newTypes.push({ label: t, value: `${t}` })
       })
       setTipos(newTypes);
       //Fim do filtro
+
     }
     loadPokemons();
   }, []);
+
+  useEffect(() => {
+    async function loadSelect() {
+      if (selecionado !== '' && selecionado !== null) {
+        const section = [];
+        const response = await axios.get('https://raw.githubusercontent.com/Biuni/PokemonGO-Pokedex/master/pokedex.json');
+        // eslint-disable-next-line array-callback-return
+        response.data.pokemon.map(pok => {
+          if (pok.type[0] === selecionado || pok.type[1] === selecionado) {
+            section.push(pok);
+          }
+        })
+        setPoke(section);
+      } else {
+        const response = await axios.get('https://raw.githubusercontent.com/Biuni/PokemonGO-Pokedex/master/pokedex.json');
+        setPoke(response.data.pokemon);
+      }
+    }
+    loadSelect();
+  }, [selecionado]);
 
   return (
     <>
       <Header
         statusBarProps={{ barStyle: 'light-content' }}
-        centerComponent={{ text: 'Poké Finder', style: { color: '#fff' } }}
+        centerComponent={{ text: 'Poké Finder', style: { color: '#fff', fontSize: 18, fontWeight: 'bold' } }}
         containerStyle={{ backgroundColor: '#02386E', borderBottomColor: '#02386E' }}
       />
       <View style={styles.container}>
@@ -56,7 +75,7 @@ export default function App() {
                 onValueChange={(label) => { setSelecionado(label) }}
                 items={tipos}
                 placeholder={{
-                  label: 'Por tipo...',
+                  label: 'Todos',
                   value: null,
                   color: 'black'
                 }}
@@ -69,28 +88,48 @@ export default function App() {
               />
             </View>
             <ScrollView>
-              <View style={{padding: 15}}>
+              <View style={{ padding: 15, marginBottom: 50 }}>
                 {poke.map(pok => (
-                  <View key={pok.id} style={styles.containerPokemon}>
-                    <View style={{ alignItems: "center" }}>
-                      <Image style={{ width: 120, height: 120, backgroundColor: '#ddd' }}
-                        source={{ uri: `${pok.img}` }}
-                      />
+                  <View key={pok.id} style={styles[pok.type[0]]}>
+                    <View style={styles.containerPokemon}>
+                      <View style={{ alignItems: "center" }}>
+                        <Image style={{ width: 120, height: 120 }}
+                          source={{ uri: `${pok.img}` }}
+                          PlaceholderContent={<ActivityIndicator />}
+                        />
+                      </View>
+                      <Text style={styles.pokeName}>{pok.name}</Text>
+                      <Divider style={{ backgroundColor: 'gray', margin: 10 }} />
+                      <View style={{ flexDirection: "row", margin: 5 }}>
+                        <Text style={{ fontWeight: "bold" }}>Tipo: </Text>
+                        <Text>{pok.type.join(', ')}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", margin: 5 }}>
+                        <Text style={{ fontWeight: "bold" }}>Altura: </Text>
+                        <Text>{pok.height}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", margin: 5 }}>
+                        <Text style={{ fontWeight: "bold" }}>Peso: </Text>
+                        <Text>{pok.weight}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", margin: 5 }}>
+                        <Text style={{ fontWeight: "bold" }}>Fraquezas: </Text>
+                        <Text>{pok.weaknesses.join(', ')}</Text>
+                      </View>
                     </View>
 
-                    <Text>{pok.name}</Text>
-                    <Text>Tipo: {pok.type.join(', ')}</Text>
-                    <Text>Altura: {pok.height}</Text>
-                    <Text>Peso: {pok.weight}</Text>
-                    <Text>Fraquezas: {pok.weaknesses.join(', ')}</Text>
                   </View>
+
                 ))}
               </View>
 
             </ScrollView>
           </View>
         ) : (
-            <ActivityIndicator size={"large"} color={'#fff'} />
+            <>
+              <ActivityIndicator size={"large"} color={'#fff'} />
+              <Text style={{color:'#fff', textAlign: 'center'}}>Carregando ...</Text>
+            </>
           )}
       </View>
     </>
@@ -115,10 +154,107 @@ const styles = StyleSheet.create({
   },
   containerPokemon: {
     backgroundColor: '#fff',
+    marginLeft: 15,
     padding: 8,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10
+  },
+  pokeName: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginTop: 5
+  },
+  Normal: {
+    backgroundColor: '#AAAA99',
     marginBottom: 5,
     borderRadius: 10
   },
+  Fire: {
+    backgroundColor: '#FE4B00',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Water: {
+    backgroundColor: '#3399FF',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Electric: {
+    backgroundColor: '#FFCB05',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Grass: {
+    backgroundColor: '#77CC55',
+    marginBottom: 5,
+    borderRadius: 10,
+  },
+  Ice: {
+    backgroundColor: '#66CCFF',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Fighting: {
+    backgroundColor: '#BB5544',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Poison: {
+    backgroundColor: '#AA5599',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Ground: {
+    backgroundColor: '#DDBB55',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Flying: {
+    backgroundColor: '#8899FF',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Psychic: {
+    backgroundColor: '#FF5599',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Bug: {
+    backgroundColor: '#AABB22',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Rock: {
+    backgroundColor: '#BBAA66',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Ghost: {
+    backgroundColor: '#6666BB',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Dragon: {
+    backgroundColor: '#7766EE',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Dark: {
+    backgroundColor: '#775544',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Steel: {
+    backgroundColor: '#AAAABB',
+    marginBottom: 5,
+    borderRadius: 10
+  },
+  Fairy: {
+    backgroundColor: '#EE99EE',
+    marginBottom: 5,
+    borderRadius: 10
+  }
 });
 
 const pickerSelectStyles = StyleSheet.create({
